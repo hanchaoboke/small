@@ -1,12 +1,16 @@
 package club.banyuan.mall.service;
 
 import club.banyuan.mall.common.dto.UmsAdminCreateParam;
+import club.banyuan.mall.common.dto.UmsAdminListResponse;
+import club.banyuan.mall.common.dto.UmsAdminUpdatePasswordParam;
 import club.banyuan.mall.common.mapper.UmsAdminMapper;
 import club.banyuan.mall.common.model.UmsAdmin;
 import club.banyuan.mall.common.model.UmsAdminExample;
 import club.banyuan.mall.common.model.UmsResource;
 import club.banyuan.mall.common.util.JwtTokenUtil;
 import club.banyuan.mall.config.security.AdminUserDetails;
+import club.banyuan.mall.dao.UmsAdminDao;
+import club.banyuan.mall.dao.param.AdminQueryParam;
 import club.banyuan.mall.exception.CommonException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +35,7 @@ import java.util.List;
  * 描述信息：
  */
 @Service
-class UmsAdminServiceImpl implements UmsAdminService {
+public class UmsAdminServiceImpl implements UmsAdminService {
     private static final Logger LOGGER = LoggerFactory.getLogger(UmsAdminServiceImpl.class);
 
     @Autowired
@@ -83,7 +87,7 @@ class UmsAdminServiceImpl implements UmsAdminService {
         UmsAdmin admin = getAdminByUsername(username);
         if (admin != null) {
 //            List<UmsResource> resourceList = getResourceList(admin.getId());
-            List<UmsResource> resourceList =  new ArrayList<>();
+            List<UmsResource> resourceList = new ArrayList<>();
             UmsResource resource = new UmsResource();
             resource.setUrl("/hello2");
             resourceList.add(resource);
@@ -114,5 +118,43 @@ class UmsAdminServiceImpl implements UmsAdminService {
         adminMapper.insert(umsAdmin);
 
         // push message queue
+    }
+
+    @Autowired
+    private UmsAdminDao adminDao;
+
+    @Override
+    public UmsAdminListResponse list(AdminQueryParam param) {
+        int limit = param.getPageSize();
+        int offset = (param.getPageNum() - 1) * limit;
+        param.setOffset(offset);
+
+        UmsAdminListResponse response = new UmsAdminListResponse();
+        response.setPageNum(param.getPageNum());
+        response.setPageSize(param.getPageSize());
+
+        int count = adminDao.count(param);
+        int totalPages = (count % limit > 0) ? (count / limit + 1) : count / limit; // 三元表达式
+        response.setTotal(count); // 总共多少条
+        response.setTotalPage(totalPages); // 总共多少页
+
+        List<UmsAdmin> admins = adminDao.findManyByParam(param);
+        response.setList(admins);
+
+        return response;
+    }
+
+    @Override
+    public void updatePassword(UmsAdminUpdatePasswordParam param) throws CommonException {
+        String username = param.getUsername();
+        UmsAdmin admin = adminDao.fineOneByUsername(username);
+        if (admin == null) {
+            throw new CommonException("用户不存在");
+        }
+        if (passwordEncoder.matches(param.getNewPassword(), admin.getPassword())) {
+            throw new CommonException("新密码不能与旧密码一样");
+        }
+        String newPasswordEncoded = passwordEncoder.encode(param.getNewPassword());
+        adminDao.updatePassword(admin.getId(), newPasswordEncoded);
     }
 }

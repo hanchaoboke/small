@@ -18,30 +18,29 @@ import java.util.Date;
  */
 
 @SpringBootApplication
-@MapperScan({"club.banyuan.mall.common.mapper"})
 @RestController
 public class MallApplication {
 
     @Autowired
-    private UmsRoleMapper umsRoleMapper;
+    private UmsRoleMapper roleMapper;
 
     public static void main(String[] args) {
         SpringApplication.run(MallApplication.class, args);
     }
 
     @GetMapping(value = "/")
-    public String showPage(){
-//        UmsRole umsRole = new UmsRole();
-//        umsRole.setName("管理员");
-//        umsRole.setDescription("管理员不用介绍");
-//        umsRole.setStatus(true);
-//        umsRole.setCreateTime(new Date());
-//        umsRoleMapper.insert(umsRole);
-//        umsRoleMapper.insertSelective(umsRole);
+    public String index() {
 
-        UmsRole role = umsRoleMapper.selectByPrimaryKey(1L);
-        return role.toString();
-//        return "hello";
+//        UmsRole role = new UmsRole();
+//        role.setName("管理员");
+//        role.setDescription("管理员不用介绍");
+//        role.setStatus(true);
+//        role.setCreateTime(new Date());
+//        roleMapper.insert(role);
+
+        UmsRole role = roleMapper.selectByPrimaryKey(1L);
+
+        return "<p>" + role.toString() + "</p>";
     }
 
     @GetMapping(value = "/hello")
